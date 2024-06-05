@@ -1,6 +1,5 @@
 <?php
 include ("db.php");
-include ("data.php");
 ?>
 
 <!doctype html>
@@ -78,7 +77,7 @@ include ("data.php");
                                             <div class="col-md-12">
                                                 <label for="fullnameInput" class="form-label">Category Name</label>
                                                 <input type="text" class="form-control" id="fullnameInput" required
-                                                    name="category" placeholder="Enter Category Name">
+                                                    name="cat_category" placeholder="Enter Category Name">
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="fullnameInput" class="form-label">Sub Category</label>
@@ -107,6 +106,118 @@ include ("data.php");
                                                 </div>
                                             </div>
                                         </form>
+
+                                        <?php 
+                                        // category insert start
+$targetdir = "image/cat-image/";
+$watermark_path = "watermark.png";
+$statusMsg = "";
+
+if (isset($_POST["category_submit"])) {
+    $category = $_POST["cat_category"];
+    $sub_category = $_POST["sub_category"];
+    $desc = $_POST["description"];
+
+    $random = rand(1, 99999);
+    $image = $random . '-' . $_FILES["image"]["name"];
+
+    $sql = "INSERT INTO `category`(`cat_category`, `sub_category`, `image`, `description`, `date`) VALUES ('$category','$sub_category','$image','$desc',current_timestamp())";
+    $result = mysqli_query($conn, $sql);
+
+    if (!empty($_FILES["image"]["name"])) {
+        $image_name = basename($image);
+        $file_name = $image_name;
+        $targetFilePath = $targetdir . $file_name;
+        $fileType = pathinfo($targetFilePath, PATHINFO_EXTENSION);
+
+        $newFolder = "image/cat-image-watermark/";
+        $newtargetFilePath = $newFolder . $file_name;
+
+        $allow_type = array('jpg', 'png', 'jpeg', 'webp');
+
+        if (in_array($fileType, $allow_type)) {
+
+            if (move_uploaded_file($_FILES["image"]["tmp_name"], $newtargetFilePath)) {
+                $watermark_img = imagecreatefrompng($watermark_path);
+                switch ($fileType) {
+                    case 'jpg':
+                        $im = imagecreatefromjpeg($newtargetFilePath);
+                        break;
+                    case 'jpeg':
+                        $im = imagecreatefromjpeg($newtargetFilePath);
+                        break;
+                    case 'png':
+                        $im = imagecreatefrompng($newtargetFilePath);
+                        break;
+                    case 'webp':
+                        $im = imagecreatefromwebp($newtargetFilePath);
+                        break;
+                    default:
+                        $im = imagecreatefromjpeg($newtargetFilePath);
+                }
+
+                $main_width = imagesx($im);
+                $main_height = imagesy($im);
+                $watermark_width = imagesx($watermark_img);
+                $watermark_height = imagesy($watermark_img);
+
+                $x = ($main_width - $watermark_width) / 2;
+                $y = ($main_height - $watermark_height) / 2;
+
+                imagecopy($im, $watermark_img, $x, $y, 0, 0, $watermark_width, $watermark_height);
+
+
+                imagepng($im, $targetFilePath);
+                imagedestroy($im);
+
+                if (file_exists($targetFilePath)) {
+                    header('location: category.php');
+                } else {
+                    $statusMsg = '<p style="color:#EA4335;">Errom watermark</p>';
+                }
+            } else {
+                $statusMsg = '<p style="color:#EA4335;">Errom upload your watermark</p>';
+            }
+        } else {
+            $statusMsg = '<p style="color:#EA4335;">Sorry only jpg, png, & jpeg file uploaded</p>';
+        }
+
+
+    } else {
+        $statusMsg = '<p style="color:#EA4335;">Please select a file to upload</p>';
+    }
+}
+// category insert end
+
+
+
+
+// category Detele Start
+
+if (isset($_POST["category_delete"])) 
+{
+    $id = $_POST['del_id'];
+    $image = $_POST['del_image'];
+
+    $sql = "DELETE FROM `category` WHERE id='$id'";
+    $result = mysqli_query($conn, $sql);
+
+    if($result){
+        unlink("image/cat-image/" . $image);
+        unlink("image/cat-image-watermark/" . $image);
+        echo "<script>
+        alert('Delete Successful');
+        window.location.href = 'category.php';
+        </script>";
+    }else{
+        echo "<script>
+        alert('Delete Error');
+        window.location.href = 'category.php';
+        </script>";
+    }
+}
+// category Detele end
+                                        ?>
                                     </div>
                                 </div>
 
@@ -114,7 +225,7 @@ include ("data.php");
                                     <div class="col-lg-12">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h4 class="card-title mb-0">Admin Details</h4>
+                                                <h4 class="card-title mb-0">Category Details</h4>
                                             </div><!-- end card header -->
 
                                             <div class="card-body">
@@ -143,7 +254,7 @@ include ("data.php");
                                                                 <th scope="row"><?php echo $i; ?></th>
                                                                 <td>
                                                                     <span class="badge bg-success-subtle text-success">
-                                                                        <?php echo $row["category"]; ?>
+                                                                        <?php echo $row["cat_category"]; ?>
                                                                     </span>
                                                                 </td>
                                                                 <td><?php echo $row["sub_category"]; ?></td>

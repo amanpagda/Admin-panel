@@ -1,11 +1,9 @@
 <?php
-include ("db.php");
-include ("data.php");
+include("db.php");
 ?>
 
 <!doctype html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
-    data-sidebar-image="none" data-preloader="disable">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable">
 
 <head>
 
@@ -78,50 +76,141 @@ include ("data.php");
                                         $sql = "SELECT * FROM `category` WHERE id='$id'";
                                         $result = mysqli_query($conn, $sql);
                                         while ($row = mysqli_fetch_array($result)) {
-                                            ?>
-                                            <form action="category.php" method="POST" enctype="multipart/form-data"
-                                                class="row g-3">
-                                                <input type="hidden" name="id" value="<?php echo $row["id"];?>">
+                                        ?>
+                                            <form action="category.php" method="POST" enctype="multipart/form-data" class="row g-3">
+                                                <input type="hidden" name="id" value="<?php echo $row["id"]; ?>">
                                                 <div class="col-md-12">
                                                     <label for="fullnameInput" class="form-label">Category Name</label>
-                                                    <input type="text" class="form-control" id="fullnameInput"
-                                                        name="category" value="<?php echo $row["category"];?>" required>
+                                                    <input type="text" class="form-control" id="fullnameInput" name="cat_category" value="<?php echo $row["cat_category"]; ?>" required>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label for="fullnameInput" class="form-label">Sub Category</label>
-                                                    <select class="col-md-6 form-select mb-3" required
-                                                        aria-label=".form-select-lg example" name="sub_category">
+                                                    <select class="col-md-6 form-select mb-3" required aria-label=".form-select-lg example" name="sub_category">
                                                         <option selected disabled>Open this select menu</option>
-                                                        <option value="Yes" <?php if($row["sub_category"] == "Yes") {
-                                                            echo "selected";
-                                                        }?>>Yes</option>
-                                                        <option value="No" <?php if($row["sub_category"] == "No") {
-                                                            echo "selected";
-                                                        }?>>No</option>
+                                                        <option value="Yes" <?php if ($row["sub_category"] == "Yes") {
+                                                                                echo "selected";
+                                                                            } ?>>Yes</option>
+                                                        <option value="No" <?php if ($row["sub_category"] == "No") {
+                                                                                echo "selected";
+                                                                            } ?>>No</option>
                                                     </select>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label for="formFile" class="form-label">Category Image</label>
-                                                    <input class="form-control" type="file" id="formFile" name="image"
-                                                        accept="png, jpeg, jpg, webp">
-                                                    <input class="form-control" type="hidden" id="formFile" name="old_image"
-                                                        accept="png, jpeg, jpg, webp" value="<?php echo $row["image"];?>">
-                                                    <img class="mt-3" src="<?php echo "image/cat-image/".$row["image"];?>" width="200px" alt="">
+                                                    <input class="form-control" type="file" id="formFile" name="image" accept="png, jpeg, jpg, webp">
+                                                    <input class="form-control" type="hidden" id="formFile" name="old_image" accept="png, jpeg, jpg, webp" value="<?php echo $row["image"]; ?>">
+                                                    <img class="mt-3" src="<?php echo "image/cat-image/" . $row["image"]; ?>" width="200px" alt="">
                                                 </div>
                                                 <div class="col-lg-12">
                                                     <label for="inputPassword4" class="form-label">Description</label>
-                                                    <textarea class="form-control" id="meassageInput" rows="3"
-                                                    required  name="description"><?php echo $row["description"];?></textarea>
+                                                    <textarea class="form-control" id="meassageInput" rows="3" required name="description"><?php echo $row["description"]; ?></textarea>
                                                 </div>
                                                 <div class="col-12">
                                                     <div class="text-end">
-                                                        <button type="submit" name="category_update"
-                                                            class="btn btn-primary">Submit</button>
+                                                        <button type="submit" name="category_update" class="btn btn-primary">Submit</button>
                                                     </div>
                                                 </div>
                                             </form>
-                                            <?php
+                                        <?php
                                         }
+
+                                        // category update start
+                                        $targetdir = "image/cat-image/";
+                                        $watermark_path = "watermark.png";
+                                        $statusMsg = "";
+                                        if (isset($_POST["category_update"])) {
+                                            $id = $_POST["id"];
+                                            $category = $_POST["cat_category"];
+                                            $sub_category = $_POST["sub_category"];
+                                            $desc = $_POST["description"];
+
+                                            $image = $_FILES["image"]["name"];
+                                            $old_image = $_POST["old_image"];
+
+                                            if ($image !== '') {
+                                                $update_file = $image;
+                                                unlink("image/cat-image/" . $old_image);
+                                                unlink("image/cat-image-watermark/" . $old_image);
+                                                if (file_exists("image/cat-image/" . $image)) {
+
+                                                    echo "<script>
+                                                    alert('Image already Exists');
+                                                    window.location.href = 'category.php';
+                                                    </script>";
+                                                }
+                                            } else {
+                                                $update_file = $old_image;
+                                            }
+                                            $sql = "UPDATE `category` SET `cat_category`='$category',`sub_category`='$sub_category',`image`='$update_file',`description`='$desc',`date`= current_timestamp() WHERE id='$id'";
+
+
+                                            $result = mysqli_query($conn, $sql);
+
+                                            if (!empty($_FILES["image"]["name"])) {
+                                                $image_name = basename($image);
+                                                $file_name = $image_name;
+                                                $targetFilePath = $targetdir . $file_name;
+                                                $fileType = pathinfo($targetFilePath, PATHINFO_EXTENSION);
+
+                                                $newFolder = "image/cat-image-watermark/";
+                                                $newtargetFilePath = $newFolder . $file_name;
+
+                                                $allow_type = array('jpg', 'png', 'jpeg', 'webp');
+
+                                                if (in_array($fileType, $allow_type)) {
+
+                                                    if (move_uploaded_file($_FILES["image"]["tmp_name"], $newtargetFilePath)) {
+                                                        $watermark_img = imagecreatefrompng($watermark_path);
+                                                        switch ($fileType) {
+                                                            case 'jpg':
+                                                                $im = imagecreatefromjpeg($newtargetFilePath);
+                                                                break;
+                                                            case 'jpeg':
+                                                                $im = imagecreatefromjpeg($newtargetFilePath);
+                                                                break;
+                                                            case 'png':
+                                                                $im = imagecreatefrompng($newtargetFilePath);
+                                                                break;
+                                                            case 'webp':
+                                                                $im = imagecreatefromwebp($newtargetFilePath);
+                                                                break;
+                                                            default:
+                                                                $im = imagecreatefromjpeg($newtargetFilePath);
+                                                        }
+
+                                                        $main_width = imagesx($im);
+                                                        $main_height = imagesy($im);
+                                                        $watermark_width = imagesx($watermark_img);
+                                                        $watermark_height = imagesy($watermark_img);
+
+                                                        $x = ($main_width - $watermark_width) / 2;
+                                                        $y = ($main_height - $watermark_height) / 2;
+
+                                                        imagecopy($im, $watermark_img, $x, $y, 0, 0, $watermark_width, $watermark_height);
+
+
+                                                        imagepng($im, $targetFilePath);
+                                                        imagedestroy($im);
+
+                                                        if (file_exists($targetFilePath)) {
+                                                            echo "<script>
+                                                            alert('Update Successful');
+                                                            window.location.href = 'category.php';
+                                                            </script>";
+                                                        } else {
+                                                            $statusMsg = '<p style="color:#EA4335;">Errom watermark</p>';
+                                                        }
+                                                    } else {
+                                                        $statusMsg = '<p style="color:#EA4335;">Errom upload your watermark</p>';
+                                                    }
+                                                } else {
+                                                    $statusMsg = '<p style="color:#EA4335;">Sorry only jpg, png, & jpeg file uploaded</p>';
+                                                }
+                                            } else {
+                                                $statusMsg = '<p style="color:#EA4335;">Please select a file to upload</p>';
+                                            }
+                                        }
+                                        // category update end
                                         ?>
                                     </div>
                                 </div>
